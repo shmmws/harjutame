@@ -30,7 +30,7 @@ btn.addEventListener('click', async () => {
     }
 
     const picked = [];
-    const dictationCount = mathConfig.etteutus_lines || mathConfig.dictation_lines || 4;
+    const dictationCount = mathConfig.dictation_lines || 4;
     const max = Math.min(dictationCount, sentences.length);
     while (picked.length < max) {
       const i = Math.floor(Math.random() * sentences.length);
