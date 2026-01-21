@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Etteütlus</title>
+  <style>
+    :root{--bg:#f6f8fa;--card:#ffffff;--accent:#2563eb;--muted:#6b7280}
+    html,body{height:100%}
+    body{
+      font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:linear-gradient(180deg,var(--bg),#fff);
+      display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;padding:2rem;margin:0
+    }
+    .card{
+      width:100%;max-width:720px;background:var(--card);border-radius:12px;padding:28px 24px;box-shadow:0 8px 30px rgba(16,24,40,0.08);
+      border:1px solid rgba(16,24,40,0.04)
+    }
+    .header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+    h1{font-size:1.25rem;margin:0;color:#0f172a}
+    p.lead{margin:6px 0 0;color:var(--muted);font-size:0.95rem}
+    .btn{
+      background:linear-gradient(180deg,var(--accent),#1e40af);color:#fff;border:0;padding:.6rem 1rem;border-radius:8px;font-size:1.05rem;cursor:pointer;
+      box-shadow:0 6px 18px rgba(37,99,235,0.18)
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed;box-shadow:none}
+    #list{margin-top:18px;padding:0;list-style:none}
+    #list li{padding:12px 14px;border-radius:8px;margin-bottom:8px;background:linear-gradient(180deg,rgba(37,99,235,0.03),transparent);font-size:1.15rem;color:#0b1220}
+    #list li small{display:block;color:var(--muted);font-size:0.85rem;margin-top:6px}
+    .help{margin-top:12px;color:var(--muted);font-size:0.9rem}
+    .math-area{margin-top:18px}
+    .math-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;margin-bottom:8px;background:linear-gradient(180deg,rgba(99,102,241,0.03),transparent)}
+    .math-item input[type="number"]{width:6.5rem;padding:8px;border-radius:8px;border:1px solid rgba(16,24,40,0.06)}
+    .math-controls{display:flex;gap:8px;align-items:center}
+    .card + .card{margin-top:14px}
+
+    .site-footer{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;color:#9ca3af;font-size:0.9rem}
+
+    @media (max-width:480px){
+      body{align-items:flex-start;padding:1rem}
+      .card{padding:18px}
+      h1{font-size:1.05rem}
+      .lead{font-size:0.9rem}
+      .btn{width:100%;padding:.7rem;border-radius:10px}
+      .math-controls{width:140px}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>Etteütlus</h1>
+        <p class="lead">Vajuta nuppu ja saa etteütluseks lauseid.</p>
+      </div>
+      <button id="btn" class="btn">Etteütlus!</button>
+    </div>
+    <ul id="list" aria-live="polite"></ul>
+  </div>
+
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>Matemaatika</h1>
+        <p class="lead">Vajuta nuppu ja saa matemaatikaülesandeid.</p>
+      </div>
+      <div class="math-controls">
+        <button id="math-btn" class="btn">Matemaatika!</button>
+      </div>
+    </div>
+    <ul id="math-area" class="math-area" aria-live="polite"></ul>
+  </div>
+  <div class="site-footer">Smws - 2026</div>
+  <script src="script.js"></script>
+</body>
+</html>

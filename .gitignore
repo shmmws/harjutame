@@ -1,0 +1,4 @@
+sentences.txt
+.env
+*.log
+*.json
