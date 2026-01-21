@@ -1,20 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Simple SFTP upload script.
-# Expects a .env file located in SFTP_ENV_DIR or /Users/alo.suursaar/configs/.env
-# Required env vars in .env: SFTP_HOST, SFTP_USER
-# Optional vars: SFTP_PORT (default 22), SFTP_REMOTE_DIR, FTP_REMOTE_DIR, SSH_KEY_PATH (defaults to SFTP_ENV_DIR/smws), KEY_PASSPHRASE
-#!/usr/bin/env bash
-set -euo pipefail
-
 # Simple SFTP upload script with basic logging.
-# Expects a .env file located in SFTP_ENV_DIR or /Users/alo.suursaar/configs/.env
+# Expects a .env file located in: SFTP_ENV_DIR or $HOME/configs/.env
 # Required env vars in .env: SFTP_HOST, SFTP_USER
 # Optional vars: SFTP_PORT (default 22), SFTP_REMOTE_DIR, FTP_REMOTE_DIR,
 # SSH_KEY_PATH (defaults to SFTP_ENV_DIR/smws), KEY_PASSPHRASE, DEPLOY_LOG
 
-ENV_DIR="${SFTP_ENV_DIR:-/Users/alo.suursaar/configs}"
+ENV_DIR="${SFTP_ENV_DIR:-$HOME/configs}"
 ENV_FILE="$ENV_DIR/.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -43,6 +36,16 @@ log_error() {
   echo "$ts $*" >>"$LOG_FILE"
 }
 
+# Helper to print paths with $HOME abbreviated to '~' to avoid leaking local usernames
+abbrev() {
+  local p="$1"
+  if [[ -n "$HOME" && "$p" == "$HOME"* ]]; then
+    printf "%s" "~${p#$HOME}"
+  else
+    printf "%s" "$p"
+  fi
+}
+
 SSH_KEY_PATH="${SSH_KEY_PATH:-$ENV_DIR/smws}"
 SFTP_PORT="${SFTP_PORT:-22}"
 
@@ -59,7 +62,7 @@ fi
 # Prefer SFTP_REMOTE_DIR, fall back to FTP_REMOTE_DIR, then to current dir
 REMOTE_DIR="${SFTP_REMOTE_DIR:-${FTP_REMOTE_DIR:-.}}"
 
-log "Using SSH key: $SSH_KEY_PATH"
+log "Using SSH key: $(abbrev "$SSH_KEY_PATH")"
 log "Remote directory: $REMOTE_DIR"
 
 if [[ ! -f "$SSH_KEY_PATH" ]]; then
