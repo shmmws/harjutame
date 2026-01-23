@@ -1,0 +1,31 @@
+{
+  "_comments": {
+    "_description": "Configuration file for the Harjutame app. Customize dictation and math problem settings below.",
+    "prefer_sentences_with": "Array of max 3 characters to filter sentences (e.g., [\"a\", \"b\"] will show only sentences containing these letters). Empty by default.",
+    "dictation_lines": "How many lines to show in the Ette\u00fctlus block (default: 4)",
+    "math_problem_count": "How many math problems to generate (default: 5)",
+    "min_integer": "Minimum integer used in problems (default: 1)",
+    "max_integer": "Maximum integer used in problems (default: 10)",
+    "maximum_sum": "Maximum allowed sum for addition problems (default: 16)",
+    "minimum_difference": "Minimum difference for subtraction problems (default: 1)",
+    "maximum_product": "Maximum allowed product for multiplication (default: 100)",
+    "minimum_quotient": "Minimum quotient for division problems (default: 1)",
+    "addition_allowed": "Set to true to allow addition problems (default: true)",
+    "subtraction_allowed": "Set to true to allow subtraction problems (default: true)",
+    "multiplication_allowed": "Set to true to allow multiplication problems (default: false)",
+    "division_allowed": "Set to true to allow division problems (default: false)"
+  },
+  "prefer_sentences_with": ["r", "l"],
+  "dictation_lines": 4,
+  "math_problem_count": 5,
+  "min_integer": 1,
+  "max_integer": 10,
+  "maximum_sum": 16,
+  "minimum_difference": 1,
+  "maximum_product": 100,
+  "minimum_quotient": 1,
+  "addition_allowed": true,
+  "subtraction_allowed": true,
+  "multiplication_allowed": false,
+  "division_allowed": false
+}

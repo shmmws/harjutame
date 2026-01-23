@@ -1,4 +1,11 @@
-sentences.txt
+# Environment variables (keep private)
 .env
+!.env.example
+
+# Deployment logs
 *.log
-*.json
+
+# Node modules and other dependencies (if added in future)
+node_modules/
+dist/
+build/
