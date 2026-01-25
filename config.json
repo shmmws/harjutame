@@ -13,11 +13,12 @@
     "addition_allowed": "Set to true to allow addition problems (default: true)",
     "subtraction_allowed": "Set to true to allow subtraction problems (default: true)",
     "multiplication_allowed": "Set to true to allow multiplication problems (default: false)",
-    "division_allowed": "Set to true to allow division problems (default: false)"
+    "division_allowed": "Set to true to allow division problems (default: false)",
+    "comparison_allowed": "Set to true to allow comparison (>, <, or =) problems (default: true)"
   },
   "prefer_sentences_with": ["r", "l"],
   "dictation_lines": 4,
-  "math_problem_count": 5,
+  "math_problem_count": 8,
   "min_integer": 1,
   "max_integer": 10,
   "maximum_sum": 16,
@@ -27,5 +28,6 @@
   "addition_allowed": true,
   "subtraction_allowed": true,
   "multiplication_allowed": false,
-  "division_allowed": false
+  "division_allowed": false,
+  "comparison_allowed": true
 }

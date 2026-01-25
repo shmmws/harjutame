@@ -131,27 +131,41 @@ let mathConfig = Object.assign({}, defaultMathConfig);
 // try to load overrides from config.json (non-blocking)
 loadMathConfig();
 
+// Validate and sanitize config to prevent invalid values
+function validateConfig(cfg) {
+  const validated = Object.assign({}, defaultMathConfig, cfg || {});
+  
+  // Bounds checking for numeric parameters
+  validated.min_integer = Math.max(0, Math.min(100, parseInt(validated.min_integer) || 1));
+  validated.max_integer = Math.max(1, Math.min(1000, parseInt(validated.max_integer) || 10));
+  validated.maximum_sum = Math.max(2, Math.min(1000, parseInt(validated.maximum_sum) || 16));
+  validated.minimum_difference = Math.max(0, Math.min(100, parseInt(validated.minimum_difference) || 1));
+  validated.maximum_product = Math.max(1, Math.min(10000, parseInt(validated.maximum_product) || 100));
+  validated.minimum_quotient = Math.max(1, Math.min(100, parseInt(validated.minimum_quotient) || 1));
+  validated.math_problem_count = Math.max(1, Math.min(50, parseInt(validated.math_problem_count) || 5));
+  validated.dictation_lines = Math.max(1, Math.min(20, parseInt(validated.dictation_lines) || 4));
+  
+  // Ensure min_integer < max_integer
+  if (validated.min_integer >= validated.max_integer) {
+    validated.max_integer = validated.min_integer + 1;
+  }
+  
+  return validated;
+}
+
 async function loadMathConfig() {
   try {
     const resp = await fetch('./config.json', { cache: 'no-store' });
     if (!resp.ok) return; // leave defaults
     const cfg = await resp.json();
-    // merge provided values into mathConfig
-    mathConfig = Object.assign({}, defaultMathConfig, cfg || {});
+    // merge provided values into mathConfig with validation
+    mathConfig = validateConfig(cfg);
     console.log('Loaded config', mathConfig);
   } catch (e) {
     // ignore and keep defaults
     console.warn('config.json not found or invalid; using defaults');
   }
 }
-
-// Math operation generators
-const mathOperations = {
-  '+': (x, y) => x + y,
-  '-': (x, y) => x - y,
-  '*': (x, y) => x * y,
-  '/': (x, y) => x / y
-};
 
 // Generate a problem for a given operation
 function generateProblem(op, config, seen) {
@@ -189,6 +203,149 @@ function generateProblem(op, config, seen) {
     const q = randInt(minQ, maxQ);
     z = q; // z represents quotient
     x = q * y;
+  } else if (op === '=' || op === '>' || op === '<') {
+    // comparison/equality: 75% simple (one expression vs number), 25% complex (two expressions)
+    const isComplex = Math.random() < 0.25;
+    
+    if (isComplex) {
+      // COMPLEX: Compare two arithmetic expressions
+      // Strategy: Generate expressions, determine relationship, then use that relationship as the operator
+      const arithOps = ['+', '-'];
+      const leftOp = arithOps[randInt(0, 1)];
+      const rightOp = arithOps[randInt(0, 1)];
+      
+      // Generate left expression using leftX and leftY
+      let leftX, leftY, leftResult;
+      if (leftOp === '+') {
+        leftY = randInt(min, max);
+        const maxX = Math.min(max, config.maximum_sum - leftY);
+        if (maxX < min) return null;
+        leftX = randInt(min, maxX);
+        leftResult = leftX + leftY;
+      } else {
+        leftY = randInt(min, max);
+        const minX = leftY + config.minimum_difference;
+        if (minX > max) return null;
+        leftX = randInt(minX, max);
+        leftResult = leftX - leftY;
+      }
+      
+      // Generate right expression using rightA and rightB
+      let rightA, rightB, rightResult;
+      if (rightOp === '+') {
+        rightB = randInt(min, max);
+        const maxA = Math.min(max, config.maximum_sum - rightB);
+        if (maxA < min) return null;
+        rightA = randInt(min, maxA);
+        rightResult = rightA + rightB;
+      } else {
+        rightB = randInt(min, max);
+        const minA = rightB + config.minimum_difference;
+        if (minA > max) return null;
+        rightA = randInt(minA, max);
+        rightResult = rightA - rightB;
+      }
+      
+      // Determine the actual relationship between the two results
+      let actualOp;
+      if (leftResult === rightResult) {
+        actualOp = '=';
+      } else if (leftResult > rightResult) {
+        actualOp = '>';
+      } else {
+        actualOp = '<';
+      }
+      
+      // Randomly choose which position has the unknown
+      const unknownPosComplex = ['leftX', 'leftY', 'rightA', 'rightB', 'operator'];
+      const unknownComplex = unknownPosComplex[randInt(0, 4)];
+      
+      let textComplex;
+      if (unknownComplex === 'leftX') {
+        textComplex = `_ ${leftOp} ${leftY} ${actualOp} ${rightA} ${rightOp} ${rightB}`;
+      } else if (unknownComplex === 'leftY') {
+        textComplex = `${leftX} ${leftOp} _ ${actualOp} ${rightA} ${rightOp} ${rightB}`;
+      } else if (unknownComplex === 'rightA') {
+        textComplex = `${leftX} ${leftOp} ${leftY} ${actualOp} _ ${rightOp} ${rightB}`;
+      } else if (unknownComplex === 'rightB') {
+        textComplex = `${leftX} ${leftOp} ${leftY} ${actualOp} ${rightA} ${rightOp} _`;
+      } else {
+        textComplex = `${leftX} ${leftOp} ${leftY} _ ${rightA} ${rightOp} ${rightB}`;
+      }
+      
+      if (seen.has(textComplex)) return null;
+      return { leftX, leftY, rightA, rightB, leftOp, rightOp, op: actualOp, unknown: unknownComplex, text: textComplex };
+    } else {
+      // SIMPLE: Single expression compared to a number
+      const arithOp = ['+', '-'][randInt(0, 1)];
+      let simpleX, simpleY, result;
+      
+      if (arithOp === '+') {
+        simpleY = randInt(min, max);
+        const maxX = Math.min(max, config.maximum_sum - simpleY);
+        if (maxX < min) return null;
+        simpleX = randInt(min, maxX);
+        result = simpleX + simpleY;
+      } else {
+        simpleY = randInt(min, max);
+        const minX = simpleY + config.minimum_difference;
+        if (minX > max) return null;
+        simpleX = randInt(minX, max);
+        result = simpleX - simpleY;
+      }
+      
+      // Choose comparison value based on operator
+      let comparison_value;
+      if (op === '=') {
+        // For equality: comparison_value is simply the result
+        comparison_value = result;
+      } else if (op === '>') {
+        // For result > value, pick a value strictly less than result
+        const minComparison = Math.max(min, result - (max - min));
+        comparison_value = randInt(minComparison, result - 1);
+        if (comparison_value < min) comparison_value = min;
+        if (comparison_value >= result) return null;
+      } else {
+        // For result < value, pick a value strictly greater than result
+        const maxComparison = Math.min(max * 2, result + (max - min));
+        comparison_value = randInt(result + 1, maxComparison);
+        if (comparison_value <= result) return null;
+      }
+      
+      // Three possible unknown positions: x, y, or the operator
+      let unknownPosSimple = ['x', 'y', 'operator'];
+      
+      // For subtraction with unknown y, validate the problem makes sense
+      if (arithOp === '-' && unknownPosSimple.includes('y')) {
+        if (op === '>') {
+          // y < x - value: need x - value > min
+          if (simpleX - comparison_value <= min) {
+            unknownPosSimple = unknownPosSimple.filter(u => u !== 'y');
+          }
+        } else if (op === '<') {
+          // y > x - value: need x - value < max
+          if (simpleX - comparison_value >= max) {
+            unknownPosSimple = unknownPosSimple.filter(u => u !== 'y');
+          }
+        }
+      }
+      
+      if (unknownPosSimple.length === 0) return null;
+      
+      const unknownSimple = unknownPosSimple[randInt(0, unknownPosSimple.length - 1)];
+      
+      let textSimple;
+      if (unknownSimple === 'x') {
+        textSimple = `_ ${arithOp} ${simpleY} ${op} ${comparison_value}`;
+      } else if (unknownSimple === 'y') {
+        textSimple = `${simpleX} ${arithOp} _ ${op} ${comparison_value}`;
+      } else {
+        textSimple = `${simpleX} ${arithOp} ${simpleY} _ ${comparison_value}`;
+      }
+      
+      if (seen.has(textSimple)) return null;
+      return { x: simpleX, y: simpleY, result, op, arithOp, unknown: unknownSimple, text: textSimple };
+    }
   }
 
   const unknowns = ['x', 'y', 'z'];
@@ -207,19 +364,28 @@ function generateProblems(count = mathConfig.math_problem_count || 5) {
   const problems = [];
   const seen = new Set();
   let attempts = 0;
+  // Increase attempt limit for comparison operators which are harder to validate
+  const hasComparison = mathConfig.comparison_allowed && 
+    !mathConfig.addition_allowed && 
+    !mathConfig.subtraction_allowed && 
+    !mathConfig.multiplication_allowed && 
+    !mathConfig.division_allowed;
+  const maxAttempts = hasComparison ? 10000 : 1000;
+  
   const ops = [];
   
   if (mathConfig.addition_allowed) ops.push('+');
   if (mathConfig.subtraction_allowed) ops.push('-');
   if (mathConfig.multiplication_allowed) ops.push('*');
   if (mathConfig.division_allowed) ops.push('/');
+  if (mathConfig.comparison_allowed) ops.push('=', '>', '<');
 
   if (ops.length === 0) {
     // fallback to + and - if nothing allowed
     ops.push('+', '-');
   }
 
-  while (problems.length < count && attempts < 1000) {
+  while (problems.length < count && attempts < maxAttempts) {
     attempts++;
     const op = ops[randInt(0, ops.length - 1)];
     const problem = generateProblem(op, mathConfig, seen);
@@ -228,6 +394,10 @@ function generateProblems(count = mathConfig.math_problem_count || 5) {
       seen.add(problem.text);
       problems.push(problem);
     }
+  }
+  
+  if (problems.length < count) {
+    console.warn(`Could only generate ${problems.length}/${count} problems after ${attempts} attempts`);
   }
   
   return problems;
@@ -246,10 +416,20 @@ function renderProblems(probs) {
 mathBtn && mathBtn.addEventListener('click', (e) => {
   mathBtn.disabled = true;
   mathBtn.textContent = 'Loon…';
-  currentProblems = generateProblems();
-  renderProblems(currentProblems);
-  mathBtn.disabled = false;
-  mathBtn.textContent = 'Matemaatika!';
+  
+  // Run problem generation in a timeout to prevent UI freezing
+  setTimeout(() => {
+    try {
+      currentProblems = generateProblems();
+      renderProblems(currentProblems);
+    } catch (err) {
+      console.error('Error generating problems:', err);
+      mathArea.innerHTML = '<li>Error generating problems. Try different settings.</li>';
+    } finally {
+      mathBtn.disabled = false;
+      mathBtn.textContent = 'Matemaatika!';
+    }
+  }, 0);
 });
 
 // Live-reload / dev-watch (best-effort). Enabled on localhost or when ?dev=1
@@ -274,7 +454,7 @@ async function checkForChanges() {
     _lastConfigText = configText;
     try {
       const parsed = JSON.parse(configText);
-      mathConfig = Object.assign({}, defaultMathConfig, parsed || {});
+      mathConfig = validateConfig(parsed);
       console.log('config.json changed, updated config', mathConfig);
       // regenerate visible problems if math area has items
       if (mathArea && mathArea.children.length > 0) {
@@ -289,8 +469,10 @@ async function checkForChanges() {
   // sentences: trigger full reload when sentences.txt changes
   const sentencesText = await fetchText('/sentences.txt');
   if (sentencesText !== null && _lastSentencesText !== null && sentencesText !== _lastSentencesText) {
-    console.log('sentences.txt changed; reloading page');
-    location.reload();
+    console.log('sentences.txt changed; asking for reload');
+    if (confirm('Sentences file changed. Reload page to apply changes?')) {
+      location.reload();
+    }
     return;
   }
   if (sentencesText !== null) _lastSentencesText = sentencesText;
@@ -304,7 +486,7 @@ if (DEV_MODE) {
     _lastSentencesText = await fetchText('/sentences.txt');
     // try to apply initial config if present
     if (_lastConfigText) {
-      try { mathConfig = Object.assign({}, defaultMathConfig, JSON.parse(_lastConfigText) || {}); } catch (e) { }
+      try { mathConfig = validateConfig(JSON.parse(_lastConfigText)); } catch (e) { }
     }
     // poll for changes every 2s
     setInterval(checkForChanges, 2000);
