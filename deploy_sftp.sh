@@ -49,7 +49,7 @@ abbrev() {
 SSH_KEY_PATH="${SSH_KEY_PATH:-$ENV_DIR/smws}"
 SFTP_PORT="${SFTP_PORT:-22}"
 
-DEFAULT_FILES=(index.html practice.js sentences.txt)
+DEFAULT_FILES=(index.html practice.js sentences.txt config.json)
 if [[ $# -gt 0 ]]; then
   FILES=("$@")
 else
