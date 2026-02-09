@@ -24,6 +24,10 @@ Edit `config.json` to adjust:
 - `prefer_sentences_with` — filter sentences by characters (e.g., `["r", "l"]`)
 - Enable/disable operations: `addition_allowed`, `subtraction_allowed`, `multiplication_allowed`, `division_allowed`, `comparison_allowed` (for `>`, `<`, `=`)
 - Comparison modes: `simple` (expression vs number) and `complex` (expression vs expression)
+- **Multi-term operations** (addition/subtraction only):
+  - `allow_multi_term_operations` — enable equations with 3+ integers (e.g., `a + b + c = d`)
+  - `max_terms` — maximum number of terms (2-4, default: 3)
+  - `multi_term_result_only` — if `true`, only the result is unknown; if `false`, any term can be unknown
 
 Edit `sentences.txt` to add custom sentences (one per line, optionally as `ID|sentence`).
 
@@ -40,6 +44,7 @@ This uploads `index.html`, `practice.js`, `sentences.txt`, and `config.json` by 
 
 - **Etteütlus!** — Random sentences for writing practice
 - **Matemaatika!** — Arithmetic problems with configurable operations and difficulty
+- **Multi-term operations** — Optional equations with 3-4 terms for addition and subtraction (e.g., `2 + 3 + 5 = _` or `10 - 2 - 3 = _`)
 - **Comparison logic** — Optional greater-than (`>`), less-than (`<`), and equality (`=`) problems
 - **Auto-reload** — Live updates on localhost when config/sentences change
 - **Sensible defaults** — Works with or without `config.json`

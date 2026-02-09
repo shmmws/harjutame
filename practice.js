@@ -124,7 +124,10 @@ const defaultMathConfig = {
   maximum_product: 100,
   minimum_quotient: 1,
   dictation_lines: 4,
-  math_problem_count: 5
+  math_problem_count: 5,
+  allow_multi_term_operations: false,
+  max_terms: 3,
+  multi_term_result_only: false
 };
 
 let mathConfig = Object.assign({}, defaultMathConfig);
@@ -144,6 +147,7 @@ function validateConfig(cfg) {
   validated.minimum_quotient = Math.max(1, Math.min(100, parseInt(validated.minimum_quotient) || 1));
   validated.math_problem_count = Math.max(1, Math.min(50, parseInt(validated.math_problem_count) || 5));
   validated.dictation_lines = Math.max(1, Math.min(20, parseInt(validated.dictation_lines) || 4));
+  validated.max_terms = Math.max(2, Math.min(4, parseInt(validated.max_terms) || 3));
   
   // Ensure min_integer < max_integer
   if (validated.min_integer >= validated.max_integer) {
@@ -174,19 +178,108 @@ function generateProblem(op, config, seen) {
   let x, y, z;
 
   if (op === '+') {
-    // ensure sum <= maximum_sum
-    y = randInt(min, max);
-    const maxX = Math.min(max, config.maximum_sum - y);
-    if (maxX < min) return null;
-    x = randInt(min, maxX);
-    z = x + y;
+    // Check if we should generate a multi-term operation
+    const useMultiTerm = config.allow_multi_term_operations && Math.random() < 0.5;
+    
+    if (useMultiTerm) {
+      // Generate multi-term addition (3 or 4 terms based on max_terms)
+      const numTerms = randInt(3, config.max_terms);
+      const terms = [];
+      let sum = 0;
+      
+      // Generate terms ensuring sum <= maximum_sum
+      for (let i = 0; i < numTerms; i++) {
+        const remaining = config.maximum_sum - sum;
+        const maxTerm = Math.min(max, remaining - (numTerms - i - 1) * min);
+        if (maxTerm < min) return null;
+        const term = randInt(min, maxTerm);
+        terms.push(term);
+        sum += term;
+      }
+      
+      // Ensure we didn't exceed maximum_sum
+      if (sum > config.maximum_sum) return null;
+      
+      // Choose which position has the unknown based on config
+      const unknownPos = config.multi_term_result_only ? numTerms : randInt(0, numTerms); // numTerms means the result
+      
+      // Build the text representation
+      let text = '';
+      for (let i = 0; i < numTerms; i++) {
+        if (i > 0) text += ' + ';
+        text += (i === unknownPos) ? '_' : terms[i];
+      }
+      text += ' = ';
+      text += (unknownPos === numTerms) ? '_' : sum;
+      
+      if (seen.has(text)) return null;
+      return { terms, sum, op: '+', unknown: unknownPos, text, isMultiTerm: true };
+    } else {
+      // Standard 2-term addition
+      y = randInt(min, max);
+      const maxX = Math.min(max, config.maximum_sum - y);
+      if (maxX < min) return null;
+      x = randInt(min, maxX);
+      z = x + y;
+    }
   } else if (op === '-') {
-    // ensure difference >= minimum_difference
-    y = randInt(min, max);
-    const minX = y + config.minimum_difference;
-    if (minX > max) return null;
-    x = randInt(minX, max);
-    z = x - y;
+    // Check if we should generate a multi-term operation
+    const useMultiTerm = config.allow_multi_term_operations && Math.random() < 0.5;
+    
+    if (useMultiTerm) {
+      // Generate multi-term subtraction (3 or 4 terms based on max_terms)
+      const numTerms = randInt(3, config.max_terms);
+      const terms = [];
+      
+      // First term (minuend) should be large enough to subtract all others
+      // and still maintain minimum_difference
+      const minFirstTerm = min * (numTerms - 1) + config.minimum_difference;
+      if (minFirstTerm > max) return null;
+      const firstTerm = randInt(Math.max(min, minFirstTerm), max);
+      terms.push(firstTerm);
+      
+      let result = firstTerm;
+      
+      // Generate subsequent terms to subtract
+      for (let i = 1; i < numTerms; i++) {
+        const remaining = result - config.minimum_difference;
+        const maxTerm = Math.min(max, remaining - (numTerms - i - 1) * min);
+        if (maxTerm < min) return null;
+        const term = randInt(min, maxTerm);
+        terms.push(term);
+        result -= term;
+      }
+      
+      // Ensure result meets minimum_difference constraint
+      if (result < config.minimum_difference) return null;
+      
+      // Choose which position has the unknown based on config
+      const unknownPos = config.multi_term_result_only ? numTerms : randInt(0, numTerms); // numTerms means the result
+      
+      // Build the text representation
+      let text = '';
+      for (let i = 0; i < numTerms; i++) {
+        if (i === 0) {
+          text += (i === unknownPos) ? '_' : terms[i];
+        } else {
+          text += ' - ';
+          text += (i === unknownPos) ? '_' : terms[i];
+        }
+      }
+      text += ' = ';
+      text += (unknownPos === numTerms) ? '_' : result;
+      
+      if (seen.has(text)) return null;
+      return { terms, result, op: '-', unknown: unknownPos, text, isMultiTerm: true };
+    } else {
+      // Standard 2-term subtraction
+      // ensure difference >= minimum_difference
+      y = randInt(min, max);
+      const minX = y + config.minimum_difference;
+      if (minX > max) return null;
+      x = randInt(minX, max);
+      z = x - y;
+    }
   } else if (op === '*') {
     // multiplication: ensure product <= maximum_product
     y = randInt(min, max);
@@ -256,9 +349,17 @@ function generateProblem(op, config, seen) {
         actualOp = '<';
       }
       
-      // Randomly choose which position has the unknown
-      const unknownPosComplex = ['leftX', 'leftY', 'rightA', 'rightB', 'operator'];
-      const unknownComplex = unknownPosComplex[randInt(0, 4)];
+      // Choose which position has the unknown
+      // Heavily favor 'operator' (80%) to make problems more meaningful
+      // Problems like "7 + 3 _ 8 + 2" are better than "7 + 3 > 8 - _"
+      const shouldBeOperator = Math.random() < 0.8;
+      let unknownComplex;
+      if (shouldBeOperator) {
+        unknownComplex = 'operator';
+      } else {
+        const unknownPosComplex = ['leftX', 'leftY', 'rightA', 'rightB'];
+        unknownComplex = unknownPosComplex[randInt(0, 3)];
+      }
       
       let textComplex;
       if (unknownComplex === 'leftX') {

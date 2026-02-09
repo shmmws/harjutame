@@ -14,14 +14,17 @@
     "subtraction_allowed": "Set to true to allow subtraction problems (default: true)",
     "multiplication_allowed": "Set to true to allow multiplication problems (default: false)",
     "division_allowed": "Set to true to allow division problems (default: false)",
-    "comparison_allowed": "Set to true to allow comparison (>, <, or =) problems (default: true)"
+    "comparison_allowed": "Set to true to allow comparison (>, <, or =) problems (default: true)",
+    "allow_multi_term_operations": "Set to true to allow equations with 3+ integers for addition/subtraction (default: false)",
+    "max_terms": "Maximum number of terms in multi-term operations (2-4, default: 3)",
+    "multi_term_result_only": "Set to true to make only the result unknown in multi-term operations, false allows any term to be unknown (default: false)"
   },
   "prefer_sentences_with": ["r", "l"],
   "dictation_lines": 4,
   "math_problem_count": 8,
   "min_integer": 1,
   "max_integer": 10,
-  "maximum_sum": 16,
+  "maximum_sum": 12,
   "minimum_difference": 1,
   "maximum_product": 100,
   "minimum_quotient": 1,
@@ -29,5 +32,8 @@
   "subtraction_allowed": true,
   "multiplication_allowed": false,
   "division_allowed": false,
-  "comparison_allowed": true
+  "comparison_allowed": true,
+  "allow_multi_term_operations": true,
+  "max_terms": 3,
+  "multi_term_result_only": true
 }
